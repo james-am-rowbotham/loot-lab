@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LOOT Trading Lab</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f6f5f2; --surface: #fcfcfb; --line: #e4e2dc; --grid: #ecebe6;
+  --ink: #0b0b0b; --ink-2: #52514e; --ink-3: #7b7a75;
+  --up: #1a7f37; --down: #c2412f; --accent: #2a78d6;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+  --s5: #e87ba4; --s6: #008300; --s7: #4a3aa7; --s8: #e34948;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #121211; --surface: #1a1a19; --line: #2f2f2c; --grid: #262624;
+    --ink: #ffffff; --ink-2: #c3c2b7; --ink-3: #8f8e86;
+    --up: #4ac26b; --down: #ff7b6b; --accent: #3987e5;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+    --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif; }
+main { max-width: 980px; margin: 0 auto; padding: 20px 16px 60px; }
+h1 { font-size: 22px; margin: 0 0 2px; letter-spacing: -0.01em; }
+h2 { font-size: 16px; margin: 32px 0 10px; }
+.sub { color: var(--ink-2); font-size: 13px; }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 16px 0 4px; }
+.tab { border: 1px solid var(--line); background: var(--surface); color: var(--ink-2);
+  padding: 7px 12px; border-radius: 999px; font: inherit; font-size: 13px; cursor: pointer; }
+.tab[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+.board { display: grid; gap: 8px; }
+.row { display: grid; grid-template-columns: 26px 1fr auto; gap: 10px; align-items: center; }
+.rank { color: var(--ink-3); font-variant-numeric: tabular-nums; font-size: 13px; text-align: right; }
+.who b { font-weight: 600; }
+.who .t { color: var(--ink-2); font-size: 12.5px; }
+.tag { display: inline-block; font-size: 11px; color: var(--ink-2); border: 1px solid var(--line);
+  border-radius: 6px; padding: 0 6px; margin-left: 6px; vertical-align: 1px; }
+.val { text-align: right; font-variant-numeric: tabular-nums; }
+.val .v { font-weight: 600; }
+.up { color: var(--up); } .down { color: var(--down); } .flat { color: var(--ink-3); }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: 0; }
+.chart { position: relative; }
+.chart > svg { display: block; width: 100%; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--ink-2); margin-top: 8px; }
+.legend span { white-space: nowrap; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 8px; padding: 8px 10px; font-size: 12.5px; box-shadow: 0 4px 16px rgba(0,0,0,.12);
+  display: none; min-width: 200px; z-index: 2; }
+.tip div { display: flex; justify-content: space-between; gap: 12px; font-variant-numeric: tabular-nums; }
+.lanegrid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.lanegrid h3 { font-size: 14px; margin: 0 0 2px; }
+.hold { font-size: 13px; margin-top: 8px; }
+.hold div { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; border-top: 1px solid var(--grid); }
+.hold div:first-child { border-top: 0; }
+.muted { color: var(--ink-3); }
+.trade { padding: 10px 0; border-top: 1px solid var(--grid); }
+.trade:first-child { border-top: 0; padding-top: 0; }
+.trade .head { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.trade .why { color: var(--ink-2); font-size: 13.5px; margin-top: 3px; }
+.badge { font-size: 11.5px; border-radius: 6px; padding: 1px 6px; margin-right: 4px; border: 1px solid var(--line); color: var(--ink-2); }
+.badge.veto { border-color: var(--down); color: var(--down); }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+select { font: inherit; font-size: 13px; padding: 5px 8px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink); }
+.foot { margin-top: 36px; color: var(--ink-3); font-size: 12.5px; }
+.explain { font-size: 13.5px; color: var(--ink-2); margin: 6px 0 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>LOOT Trading Lab</h1>
+  <div class="sub">Paper money only. Each lane starts with $10,000 and tries a different way of trading. Updated after every run.</div>
+  <div class="tabs" id="tabs" role="tablist"></div>
+  <div id="app"><p class="muted">Loading…</p></div>
+  <div class="foot">Costs include broker fees and every cent the AI spends thinking. “Checkers” are two AIs that review each AI trade; in most lanes they only watch.</div>
+</main>
+<script>
+const SERIES = ["--s1","--s2","--s3","--s4","--s5","--s6","--s7","--s8"];
+const $ = (s, el=document) => el.querySelector(s);
+const money = (x, d=0) => (x < 0 ? "−$" : "$") + Math.abs(x).toLocaleString("en-US", {minimumFractionDigits: d, maximumFractionDigits: d});
+const signed = x => (x > 0.5 ? "up " : x < -0.5 ? "down " : "") + money(Math.abs(x));
+const cls = x => x > 0.5 ? "up" : x < -0.5 ? "down" : "flat";
+const dayName = iso => { const d = new Date(iso + "T12:00:00Z"); return d.toLocaleDateString("en-GB", {weekday: "short", day: "numeric", month: "short", timeZone: "UTC"}); };
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+function named(sym, name) { return name ? `${esc(sym)} <span class="muted">(${esc(name)})</span>` : esc(sym); }
+function amount(t, market) {
+  if (market === "crypto" && t.price) return money(t.qty * t.price) + " of";
+  return `${t.qty}`;
+}
+
+let RUNS = [], current = null;
+async function boot() {
+  try { RUNS = await (await fetch("runs.json", {cache: "no-store"})).json(); }
+  catch { $("#app").innerHTML = '<p class="muted">No runs yet.</p>'; return; }
+  const want = new URLSearchParams(location.search).get("run");
+  const tabs = $("#tabs");
+  RUNS.forEach(r => {
+    const b = document.createElement("button");
+    b.className = "tab"; b.role = "tab"; b.textContent = r.title; b.dataset.run = r.run;
+    b.onclick = () => show(r.run); tabs.appendChild(b);
+  });
+  show(RUNS.find(r => r.run === want) ? want : RUNS.find(r => r.run === "r28")?.run || RUNS[0].run);
+}
+
+async function show(run) {
+  current = run;
+  document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", t.dataset.run === run));
+  history.replaceState(null, "", "?run=" + run);
+  let data;
+  try { data = await (await fetch(run + ".json", {cache: "no-store"})).json(); }
+  catch { $("#app").innerHTML = '<p class="muted">Could not load this run.</p>'; return; }
+  if (current !== run) return;
+  render(data);
+}
+
+function render(D) {
+  const cap = D.capital;
+  const done = D.lanes[0]?.marks.length || 0;
+  const ranked = [...D.lanes].sort((a, b) => b.value - a.value);
+  const refM = D.reference.marks;
+  const refMove = refM.length > 1 ? (refM[refM.length-1][1] / refM[0][1] - 1) * 100 : 0;
+  const status = D.closed ? "Stopped early" : done >= D.days.length ? "Finished" : `Day ${done} of ${D.days.length}`;
+  const colour = {}; D.lanes.forEach((l, i) => colour[l.id] = SERIES[i % SERIES.length]);
+
+  let h = `<div class="sub" style="margin-top:6px">${status} · ${dayName(D.days[0])} to ${dayName(D.days[D.days.length-1])} · updated ${new Date(D.updated_at).toLocaleString("en-GB", {dateStyle: "medium", timeStyle: "short"})}</div>`;
+
+  h += `<h2>Who's ahead</h2><div class="card board">`;
+  ranked.forEach((l, i) => {
+    const ch = l.value - cap;
+    h += `<div class="row"><div class="rank">${i+1}</div>
+      <div class="who"><span class="sw" style="background:var(${colour[l.id]})"></span><b>${esc(l.label)}</b><span class="tag">${esc(l.model)}</span>
+      <div class="t">${esc(l.tests)}</div></div>
+      <div class="val"><div class="v">${money(l.value)}</div><div class="${cls(ch)}" style="font-size:12.5px">${signed(ch)}</div></div></div>`;
+  });
+  h += `<div class="row"><div class="rank"></div><div class="who t" style="color:var(--ink-2)">${esc(D.reference.label)}, for comparison</div>
+    <div class="val ${cls(refMove*100)}" style="font-size:13px">${refM.length > 1 ? (refMove >= 0 ? "up " : "down ") + Math.abs(refMove).toFixed(1) + "%" : "—"}</div></div></div>`;
+
+  h += `<h2>Money over time</h2><div class="card chart" id="chart"></div>`;
+
+  h += `<h2>What each one holds now</h2><div class="lanegrid">`;
+  D.lanes.forEach(l => {
+    h += `<div class="card"><h3><span class="sw" style="background:var(${colour[l.id]})"></span>${esc(l.label)}</h3>
+      <div class="sub">Cash ${money(l.cash)} · AI thinking ${money(l.ai_cost, 2)} · fees ${money(l.fees, 2)}</div><div class="hold">`;
+    if (!l.holdings.length) h += `<div class="muted">Nothing held.</div>`;
+    l.holdings.forEach(x => {
+      const now = x.price ?? x.bought_at, gain = (now - x.bought_at) * x.qty;
+      h += `<div><span>${named(x.symbol, x.name)}<br><span class="muted" style="font-size:12px">bought ${money(x.bought_at, 2)} · sells by ${dayName(x.sell_by)}${x.stop ? " · safety net " + money(x.stop, 2) : ""}</span></span>
+        <span class="val"><div>${money(now * x.qty)}</div><div class="${cls(gain)}" style="font-size:12px">${signed(gain)}</div></span></div>`;
+    });
+    h += `</div></div>`;
+  });
+  h += `</div>`;
+
+  h += `<h2>Every trade</h2><div class="filters"><select id="flane"><option value="">All lanes</option>${D.lanes.map(l => `<option value="${l.id}">${esc(l.label)}</option>`).join("")}</select></div><div class="card" id="trades"></div>`;
+  if (D.blocked.length) {
+    h += `<h2>Stopped before they happened</h2><div class="card">` + D.blocked.slice().reverse().map(b => {
+      const l = D.lanes.find(x => x.id === b.lane);
+      return `<div class="trade"><div class="head"><span>${dayName(b.day)} · <b>${esc(l?.label || b.lane)}</b> wanted ${esc(b.symbol)}</span></div><div class="why">${esc(b.reason)}</div></div>`;
+    }).join("") + `</div>`;
+  }
+  h += `<p class="explain">AI thinking so far across all lanes: ${money(D.ai_cost, 2)}.</p>`;
+  $("#app").innerHTML = h;
+
+  const drawTrades = () => {
+    const f = $("#flane").value;
+    const list = D.trades.filter(t => !f || t.lane === f).slice().reverse();
+    $("#trades").innerHTML = list.length ? list.map(t => {
+      const l = D.lanes.find(x => x.id === t.lane);
+      const verb = t.side === "BUY" ? "Bought" : "Sold";
+      const how = t.origin === "harness" ? " (automatic)" : t.origin === "stop" ? " (safety net)" : t.origin === "rules" ? " (rule)" : t.origin === "baseline" ? " (fund mix)" : "";
+      const res = t.result != null ? ` · <span class="${cls(t.result)}">${t.result >= 0 ? "made" : "lost"} ${money(Math.abs(t.result))}</span>` : "";
+      const price = t.price ? ` at ${money(t.price, 2)}` : ` <span class="muted">(${esc(t.status)})</span>`;
+      const checks = Object.entries(t.checkers || {}).map(([k, v]) => v.verdict ? `<span class="badge ${v.verdict === "veto" ? "veto" : ""}">${k === "jev" ? "Jev" : "Sonnet"}: ${v.verdict === "veto" ? "thought it a mistake" + (v.p_veto != null ? " (" + Math.round(v.p_veto*100) + "%)" : "") : "fine"}</span>` : "").join("");
+      return `<div class="trade"><div class="head"><span>${dayName(t.day)} · <span class="sw" style="background:var(${colour[t.lane]})"></span><b>${esc(l?.label || t.lane)}</b></span></div>
+        <div>${verb} ${amount(t, D.market)} ${named(t.symbol, t.name)}${price}${how}${res}</div>
+        ${t.why && !["harness","baseline"].includes(t.origin) ? `<div class="why">${esc(t.why)}</div>` : ""}
+        ${checks ? `<div style="margin-top:4px">${checks}</div>` : ""}</div>`;
+    }).join("") : `<div class="muted">No trades yet.</div>`;
+  };
+  $("#flane").onchange = drawTrades; drawTrades();
+  drawChart(D, colour);
+}
+
+function drawChart(D, colour) {
+  const box = $("#chart"), W = Math.max(320, box.clientWidth - 32), H = 260;
+  const m = {l: 58, r: 16, t: 10, b: 28};
+  const days = D.days, n = days.length;
+  const series = D.lanes.map(l => ({id: l.id, label: l.label, pts: l.marks.map(([d, v]) => [days.indexOf(d), v])}));
+  const r0 = D.reference.marks[0]?.[1];
+  const ref = r0 ? D.reference.marks.map(([d, v]) => [days.indexOf(d), D.capital * v / r0]) : [];
+  const all = [D.capital, ...series.flatMap(s => s.pts.map(p => p[1])), ...ref.map(p => p[1])];
+  let lo = Math.min(...all), hi = Math.max(...all);
+  const raw = Math.max(100, hi - lo) / 4, mag = 10 ** Math.floor(Math.log10(raw));
+  const step = [1, 2, 2.5, 5, 10].map(k => k * mag).find(k => k >= raw);
+  lo = Math.floor(lo / step) * step; hi = Math.ceil(hi / step) * step;
+  if (hi - lo < step * 2) hi = lo + step * 2;
+  const x = i => m.l + (n > 1 ? i / (n - 1) : 0) * (W - m.l - m.r);
+  const y = v => m.t + (1 - (v - lo) / (hi - lo)) * (H - m.t - m.b);
+  const ticks = Math.round((hi - lo) / step);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Each lane's money by day">`;
+  for (let k = 0; k <= ticks; k++) { const v = lo + k * step;
+    s += `<line x1="${m.l}" x2="${W-m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/><text x="${m.l-8}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--ink-3)">${money(v)}</text>`; }
+  s += `<line x1="${m.l}" x2="${W-m.r}" y1="${y(D.capital)}" y2="${y(D.capital)}" stroke="var(--ink-3)" stroke-dasharray="2 3"/>`;
+  days.forEach((d, i) => { const every = Math.ceil(n / Math.max(2, Math.floor((W - m.l) / 64)));
+    if ((i % every === 0 && n - 1 - i >= every) || i === n - 1) s += `<text x="${x(i)}" y="${H-8}" text-anchor="${i === n - 1 ? "end" : i === 0 ? "start" : "middle"}" font-size="11" fill="var(--ink-3)">${new Date(d+"T12:00:00Z").toLocaleDateString("en-GB", {day: "numeric", month: "short", timeZone: "UTC"})}</text>`; });
+  const path = pts => pts.map((p, i) => `${i ? "L" : "M"}${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join("");
+  if (ref.length) s += `<path d="${path(ref)}" fill="none" stroke="var(--ink-3)" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+  series.forEach(se => { if (se.pts.length) {
+    s += `<path d="${path(se.pts)}" fill="none" stroke="var(${colour[se.id]})" stroke-width="2" stroke-linejoin="round"/>`;
+    const last = se.pts[se.pts.length-1]; s += `<circle cx="${x(last[0])}" cy="${y(last[1])}" r="4" fill="var(${colour[se.id]})" stroke="var(--surface)" stroke-width="2"/>`; }});
+  s += `<line id="cross" y1="${m.t}" y2="${H-m.b}" stroke="var(--ink-3)" stroke-width="1" visibility="hidden"/><rect id="hit" x="${m.l}" y="0" width="${W-m.l-m.r}" height="${H}" fill="transparent"/></svg>`;
+  s += `<div class="legend">${D.lanes.map(l => `<span><span class="sw" style="background:var(${colour[l.id]})"></span>${esc(l.label)}</span>`).join("")}${ref.length ? `<span><svg width="18" height="8" style="vertical-align:1px;margin-right:6px"><line x1="0" x2="18" y1="4" y2="4" stroke="var(--ink-3)" stroke-width="1.5" stroke-dasharray="5 4"/></svg>${esc(D.reference.label)}, scaled to $10,000</span>` : ""}</div><div class="tip" id="tip"></div>`;
+  box.innerHTML = s;
+  const svg = $("svg", box), tip = $("#tip"), cross = $("#cross");
+  const done = Math.max(0, ...series.map(se => se.pts.length)) - 1;
+  $("#hit").addEventListener("pointermove", ev => {
+    const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) * W / r.width;
+    const i = Math.max(0, Math.min(done, Math.round((px - m.l) / (W - m.l - m.r) * (n - 1))));
+    if (done < 0) return;
+    cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i)); cross.setAttribute("visibility", "visible");
+    const rows = series.map(se => [se, se.pts.find(p => p[0] === i)]).filter(([, p]) => p).sort((a, b) => b[1][1] - a[1][1]);
+    tip.innerHTML = `<b>${dayName(days[i])}</b>` + rows.map(([se, p]) => `<div><span><span class="sw" style="background:var(${colour[se.id]})"></span>${esc(se.label)}</span><span>${money(p[1])}</span></div>`).join("");
+    tip.style.display = "block";
+    const left = x(i) * r.width / W + 16; tip.style.left = Math.min(left, r.width - tip.offsetWidth - 4) + "px"; tip.style.top = "8px";
+  });
+  $("#hit").addEventListener("pointerleave", () => { tip.style.display = "none"; cross.setAttribute("visibility", "hidden"); });
+}
+addEventListener("resize", () => { if (current) show(current); });
+boot();
+</script>
+</body>
+</html>
